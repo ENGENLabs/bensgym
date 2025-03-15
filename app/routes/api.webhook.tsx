@@ -3,7 +3,12 @@ import type { ActionFunctionArgs } from '@remix-run/node';
 import { createSystemLog } from '~/models/system-log.server';
 import { updateSquareApiStatus, logSystemError } from '~/utils/system.server';
 import { getEnv } from '~/utils/env.server';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
+
+// Set a longer timeout for webhook processing on Vercel
+export const config = {
+  maxDuration: 60 // Maximum duration in seconds (Vercel's limit)
+};
 
 export async function action({ request }: ActionFunctionArgs) {
   const env = getEnv();

@@ -1,3 +1,5 @@
+# Copy the contents below to your .env file manually
+
 # Application
 NODE_ENV=development
 SESSION_SECRET=your-secret-key-here

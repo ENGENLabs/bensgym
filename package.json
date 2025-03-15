@@ -14,7 +14,9 @@
     "format": "prettier --write .",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && remix vite:build"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

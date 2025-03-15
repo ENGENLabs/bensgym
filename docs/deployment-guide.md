@@ -1,98 +1,83 @@
-# Deployment Guide for R-Fitness Gym Check-in System
+# Deployment Guide: Vercel + Supabase
 
-This guide provides step-by-step instructions for deploying the R-Fitness Gym Check-in System to a production environment.
+This guide provides step-by-step instructions for deploying the R-Fitness Gym Check-in System using Vercel and Supabase.
 
 ## Prerequisites
 
 Before deploying, ensure you have:
 
-1. A server or cloud instance running Linux (Ubuntu 20.04 LTS or newer recommended)
-2. Docker and Docker Compose installed
-3. Domain name configured with DNS pointing to your server
+1. A GitHub account with your project repository
+2. A [Vercel](https://vercel.com) account (can sign up with GitHub)
+3. A [Supabase](https://supabase.com) account
 4. Square Developer account with API credentials
-5. Basic knowledge of Docker, Nginx, and Linux server administration
 
 ## Deployment Steps
 
-### 1. Prepare Your Environment
+### 1. Set Up Supabase Database
 
-Clone the repository to your local machine:
-
-```bash
-git clone https://github.com/your-username/rfitness.git
-cd rfitness
-```
+1. Log in to [Supabase](https://supabase.com)
+2. Create a new project with a name like "rfitness"
+3. Note your project URL and connection strings
+4. In the SQL Editor, you can run migrations manually if needed
 
 ### 2. Configure Environment Variables
 
-Create a `.env.production` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the following variables (based on `.env.example`):
 
 ```
-NODE_ENV=production
+# Application
+NODE_ENV=development
 SESSION_SECRET=your-secure-session-secret
+
+# Database - Supabase Configuration
+DATABASE_URL=postgres://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-ID].supabase.co:5432/postgres
+DIRECT_URL=postgres://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-ID].supabase.co:5432/postgres
+
+# Square API
 SQUARE_ACCESS_TOKEN=your-square-access-token
 SQUARE_LOCATION_ID=your-square-location-id
-SQUARE_ENVIRONMENT=production
+SQUARE_ENVIRONMENT=sandbox  # or production
 SQUARE_WEBHOOK_SIGNATURE_KEY=your-webhook-signature-key
-SQUARE_WEBHOOK_URL=https://checkin.rfitnessbelfast.com/api/webhook
-DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/rfitness
+SQUARE_WEBHOOK_URL=https://your-vercel-app-name.vercel.app/api/webhook
 ```
 
-### 3. Set Up Docker Secrets
+### 3. Prepare Your Database
 
-Create a secure password for the PostgreSQL database:
+Run the database preparation script to set up your Supabase database:
 
 ```bash
-echo "your-secure-db-password" | docker secret create postgres_password -
+node scripts/prepare-database.js
 ```
 
-### 4. Initialize Docker Swarm
+This will:
+- Generate the Prisma client
+- Push your schema to Supabase
 
-If not already initialized, set up Docker Swarm:
+### 4. Deploy to Vercel
 
-```bash
-docker swarm init --advertise-addr <YOUR-SERVER-IP>
-```
+1. Push your code to GitHub
+2. Log in to [Vercel](https://vercel.com)
+3. Click "Add New" > "Project"
+4. Import your GitHub repository
+5. Configure the project:
+   - Framework Preset: Remix
+   - Build Command: `npm run vercel-build`
+   - Output Directory: `build/client`
+   - Install Command: `npm install`
 
-### 5. Build and Deploy the Application
+6. Add environment variables:
+   - Copy all variables from your `.env` file
+   - Make sure to update `NODE_ENV=production`
+   - Update `SQUARE_WEBHOOK_URL` with your actual Vercel deployment URL
 
-Deploy the application stack:
+7. Click "Deploy"
 
-```bash
-docker stack deploy -c docker-stack.yaml rfitness
-```
-
-### 6. Verify Deployment
-
-Check that all services are running:
-
-```bash
-docker service ls
-```
-
-You should see three services running:
-- `rfitness_traefik`: The reverse proxy
-- `rfitness_app`: The application
-- `rfitness_db`: The PostgreSQL database
-
-### 7. Run Database Migrations
-
-Execute Prisma migrations to set up the database schema:
-
-```bash
-docker exec $(docker ps -q -f name=rfitness_app) npx prisma migrate deploy
-```
-
-### 8. Set Up SSL with Let's Encrypt
-
-The Traefik service is configured to automatically obtain and renew SSL certificates from Let's Encrypt. Ensure your domain is correctly pointed to your server's IP address.
-
-### 9. Configure Square Webhooks
+### 5. Configure Square Webhooks
 
 1. Log in to your [Square Developer Dashboard](https://developer.squareup.com/apps)
 2. Select your application
 3. Navigate to the Webhooks section
-4. Add a webhook subscription with the URL: `https://checkin.rfitnessbelfast.com/api/webhook`
+4. Add a webhook subscription with the URL: `https://your-vercel-app-name.vercel.app/api/webhook`
 5. Subscribe to the following event types:
    - `customer.created`
    - `customer.updated`
@@ -101,60 +86,50 @@ The Traefik service is configured to automatically obtain and renew SSL certific
    - `subscription.updated`
    - `subscription.canceled`
 6. Copy the Webhook Signature Key provided by Square
-7. Update your `.env.production` file with the `SQUARE_WEBHOOK_SIGNATURE_KEY` value
+7. Update your Vercel environment variables with the `SQUARE_WEBHOOK_SIGNATURE_KEY` value
 
-### 10. Verify the Application
+### 6. Verify the Application
 
-Open your browser and navigate to `https://checkin.rfitnessbelfast.com`. You should see the R-Fitness Gym Check-in System login page.
+Open your browser and navigate to your Vercel deployment URL. You should see the R-Fitness Gym Check-in System login page.
 
 ## Database Management
 
 ### Accessing the Database
 
-To connect to the PostgreSQL database:
+You can access your Supabase database through:
 
-```bash
-docker exec -it $(docker ps -q -f name=rfitness_db) psql -U postgres -d rfitness
-```
+1. The Supabase dashboard
+2. Using the Supabase CLI
+3. Using any PostgreSQL client with your connection string
 
 ### Backup and Restore
 
-To backup the database:
+Supabase provides automated backups. You can also:
 
-```bash
-docker exec -t $(docker ps -q -f name=rfitness_db) pg_dump -U postgres rfitness > backup_$(date +%Y%m%d_%H%M%S).sql
-```
-
-To restore from a backup:
-
-```bash
-cat backup_file.sql | docker exec -i $(docker ps -q -f name=rfitness_db) psql -U postgres -d rfitness
-```
+1. Export data through the Supabase dashboard
+2. Use `pg_dump` with your connection string
+3. Use the Supabase CLI for backups
 
 ## Monitoring and Logging
 
 ### Viewing Application Logs
 
-```bash
-docker service logs rfitness_app
-```
+Access logs through the Vercel dashboard:
+1. Go to your project
+2. Click on "Deployments"
+3. Select the deployment
+4. Click on "Functions" to see function logs
 
-### Viewing Database Logs
+### Database Monitoring
 
-```bash
-docker service logs rfitness_db
-```
+Supabase provides monitoring tools:
+1. Go to your Supabase project
+2. Click on "Database"
+3. View performance metrics and logs
 
-### Viewing Traefik Logs
+### Application Monitoring
 
-```bash
-docker service logs rfitness_traefik
-```
-
-### Monitoring System Status
-
-The application includes a built-in monitoring dashboard accessible at `https://checkin.rfitnessbelfast.com/admin`. This dashboard provides:
-
+The application includes a built-in monitoring dashboard accessible at `/admin`. This dashboard provides:
 1. Recent check-ins
 2. System logs
 3. Webhook status
@@ -163,22 +138,13 @@ The application includes a built-in monitoring dashboard accessible at `https://
 
 ## Updating the Application
 
-To update the application to a new version:
+To update the application:
 
-1. Pull the latest changes:
+1. Push changes to your GitHub repository
+2. Vercel will automatically deploy the new version
+3. If you've made schema changes, you may need to run migrations manually:
    ```bash
-   git pull origin main
-   ```
-
-2. Rebuild and redeploy:
-   ```bash
-   docker build -t rfitness:latest .
-   docker stack deploy -c docker-stack.yaml rfitness
-   ```
-
-3. Run any new migrations:
-   ```bash
-   docker exec $(docker ps -q -f name=rfitness_app) npx prisma migrate deploy
+   npx prisma migrate deploy
    ```
 
 ## Troubleshooting
@@ -187,84 +153,30 @@ To update the application to a new version:
 
 If the application cannot connect to the database:
 
-1. Check that the database service is running:
-   ```bash
-   docker service ps rfitness_db
-   ```
-
-2. Verify the database URL in the environment variables:
-   ```bash
-   docker exec $(docker ps -q -f name=rfitness_app) printenv | grep DATABASE_URL
-   ```
-
-3. Check database logs for errors:
-   ```bash
-   docker service logs rfitness_db
-   ```
-
-### Square API Connection Issues
-
-If the application cannot connect to Square API:
-
-1. Verify your Square API credentials in the environment variables:
-   ```bash
-   docker exec $(docker ps -q -f name=rfitness_app) printenv | grep SQUARE
-   ```
-
-2. Check application logs for Square API errors:
-   ```bash
-   docker service logs rfitness_app | grep "Square API"
-   ```
-
-3. Verify webhook configuration in the Square Developer Dashboard
+1. Check your `DATABASE_URL` and `DIRECT_URL` environment variables in Vercel
+2. Verify that your IP is allowed in Supabase's connection pooling settings
+3. Check Supabase logs for any connection errors
 
 ### Webhook Issues
 
-If webhooks are not being received or processed:
+If webhooks aren't being received:
 
-1. Check that the webhook URL is correctly configured in Square Developer Dashboard
-2. Verify the webhook signature key is correctly set in your environment variables
-3. Check application logs for webhook-related errors:
-   ```bash
-   docker service logs rfitness_app | grep "webhook"
-   ```
-4. Ensure your domain is correctly pointed to your server and SSL is properly configured
+1. Verify your webhook URL in Square Developer Dashboard
+2. Check that the webhook signature key is correctly set in environment variables
+3. Check Vercel function logs for any webhook processing errors
 
-### SSL Certificate Issues
+### Deployment Failures
 
-If Traefik fails to obtain SSL certificates:
+If deployment fails:
 
-1. Ensure your domain is correctly pointed to your server's IP address
-2. Check Traefik logs for Let's Encrypt errors:
-   ```bash
-   docker service logs rfitness_traefik | grep "Let's Encrypt"
-   ```
+1. Check Vercel build logs for errors
+2. Verify that all required environment variables are set
+3. Make sure your Prisma schema is compatible with Supabase
 
-3. Verify that ports 80 and 443 are open on your server's firewall
+## Performance Optimization
 
-## Scaling the Application
+For better performance:
 
-To scale the application horizontally:
-
-```bash
-docker service scale rfitness_app=3
-```
-
-This will run three instances of the application container, with Traefik automatically load balancing between them.
-
-## Security Considerations
-
-1. Keep your server and Docker up to date with security patches
-2. Regularly rotate your Square API credentials and database passwords
-3. Enable firewall rules to restrict access to only necessary ports
-4. Set up regular database backups
-5. Monitor system logs for suspicious activity
-6. Use strong, unique passwords for all services
-
-## Additional Resources
-
-- [Docker Documentation](https://docs.docker.com/)
-- [Traefik Documentation](https://doc.traefik.io/traefik/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
-- [Square API Documentation](https://developer.squareup.com/docs)
-- [Prisma Documentation](https://www.prisma.io/docs/)
+1. Consider using Prisma Accelerate for connection pooling
+2. Enable Vercel Edge Functions for faster global response times
+3. Use Supabase's connection pooling features
