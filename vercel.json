@@ -1,27 +1,7 @@
 {
-  "buildCommand": "npm install @remix-run/dev && npm run build",
+  "buildCommand": "npm install @remix-run/dev vite vite-tsconfig-paths && npm run vercel-build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "remix",
-  "outputDirectory": "build/client",
-  "regions": ["fra1"],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
-    }
-  ]
+  "framework": null,
+  "outputDirectory": "build/client"
 }
