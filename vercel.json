@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install && npx prisma generate",
+  "installCommand": "npm install",
   "framework": "remix",
   "outputDirectory": "build/client",
   "regions": ["fra1"],
