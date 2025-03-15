@@ -9,14 +9,14 @@
   "scripts": {
     "build": "remix vite:build",
     "dev": "remix vite:dev",
-    "start": "remix-serve build/server/index.js",
+    "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "format": "prettier --write .",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "postinstall": "npx prisma@5.10.0 generate",
-    "vercel-build": "npx prisma@5.10.0 generate && npx prisma@5.10.0 migrate deploy && remix vite:build"
+    "vercel-build": "npx prisma@5.10.0 generate && remix vite:build"
   },
   "dependencies": {
     "@prisma/client": "5.10.0",

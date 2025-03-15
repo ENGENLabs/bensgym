@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install @remix-run/dev vite vite-tsconfig-paths && npm run vercel-build",
+  "buildCommand": "npm install && npx prisma@5.10.0 generate && remix vite:build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": null,
