@@ -2,7 +2,7 @@
   "name": "rfitness",
   "version": "1.0.0",
   "private": true,
-  "description": "R-Fitness Gym Check-in System",
+  "description": "R-Fitness Gym Check-in System - Vercel Deployment",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
