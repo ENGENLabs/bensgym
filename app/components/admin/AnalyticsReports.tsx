@@ -1,55 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from '@remix-run/react';
+
+interface PeakHourData {
+  hour: string;
+  count: number;
+  percentage?: number;
+  averageCount?: number;
+}
 
 interface AnalyticsReportsProps {
-  peakHours: Array<{ hour: string; count: number }>;
-  topMembers: Array<{ name: string; checkIns: number }>;
-  checkInsByDay?: Array<{ date: string; count: number }>;
-  membershipTypes?: Array<{ type: string; count: number }>;
+  analytics: {
+    peakHours: Array<PeakHourData>;
+    topMembers: Array<{ name: string; checkIns: number }>;
+    checkInsByDay: Array<{ date: string; count: number }>;
+    membershipTypes: Array<{ type: string; count: number }>;
+  };
+  timeRange?: 'week' | 'month' | 'quarter';
+  memberMetrics?: {
+    newMembers: number;
+    retentionRate: number;
+    newMembersChange: string;
+    retentionChange: string;
+  };
 }
 
 export default function AnalyticsReports({ 
-  peakHours, 
-  topMembers,
-  checkInsByDay = [], 
-  membershipTypes = []
+  analytics,
+  timeRange = 'week',
+  memberMetrics
 }: AnalyticsReportsProps) {
-  const [timeRange, setTimeRange] = useState('week');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
   
-  // If no data is provided for these, create some sample data
-  const defaultCheckInsByDay = checkInsByDay.length > 0 ? checkInsByDay : [
-    { date: 'Mon', count: 42 },
-    { date: 'Tue', count: 38 },
-    { date: 'Wed', count: 45 },
-    { date: 'Thu', count: 39 },
-    { date: 'Fri', count: 48 },
-    { date: 'Sat', count: 52 },
-    { date: 'Sun', count: 30 }
-  ];
+  // Extract data from props with default values for safety
+  const { 
+    peakHours = [], 
+    topMembers = [], 
+    checkInsByDay = [], 
+    membershipTypes = [] 
+  } = analytics || {};
+  
+  // Handle time range change
+  const handleTimeRangeChange = (newTimeRange: string) => {
+    setSelectedTimeRange(newTimeRange as 'week' | 'month' | 'quarter');
+    
+    // Update URL with new time range
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('timeRange', newTimeRange);
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+  };
+  
+  // Update local state when prop changes
+  useEffect(() => {
+    setSelectedTimeRange(timeRange);
+  }, [timeRange]);
   
   // Filter out any trial members from membership types
-  const filteredMembershipTypes = membershipTypes.length > 0 
-    ? membershipTypes.filter(type => type.type !== 'Trial')
-    : [
-        { type: 'Monthly Subscription', count: 65 },
-        { type: 'Cash Payment', count: 25 }
-      ];
+  const filteredMembershipTypes = membershipTypes && membershipTypes.length > 0 
+    ? membershipTypes.filter(type => type && type.type !== 'Trial')
+    : [];
   
   // Calculate max values for scaling
-  const maxCheckInCount = Math.max(...defaultCheckInsByDay.map(day => day.count));
-  const totalMembers = filteredMembershipTypes.reduce((sum, type) => sum + type.count, 0);
+  const maxCheckInCount = Math.max(...(checkInsByDay || []).map(day => (day && day.count) || 0), 1);
+  const totalMembers = (filteredMembershipTypes || []).reduce((sum, type) => sum + (type && type.count || 0), 0);
   
   // Function to handle exporting analytics data
   const handleExportReports = () => {
     // Create a data object with all analytics information
     const exportData = {
-      timeRange,
-      checkInsByDay: defaultCheckInsByDay,
+      timeRange: selectedTimeRange,
+      checkInsByDay,
       membershipTypes: filteredMembershipTypes,
       peakHours,
       topMembers,
-      averageDailyCheckIns: Math.round(defaultCheckInsByDay.reduce((sum, day) => sum + day.count, 0) / defaultCheckInsByDay.length),
-      memberRetention: "92%",
-      newMembers: 18,
+      averageDailyCheckIns: Math.round(checkInsByDay.reduce((sum, day) => sum + day.count, 0) / checkInsByDay.length),
+      memberRetention: memberMetrics?.retentionRate || 0,
+      newMembers: memberMetrics?.newMembers || 0,
       exportDate: new Date().toISOString()
     };
     
@@ -65,7 +92,7 @@ export default function AnalyticsReports({
     // Create a link element
     const link = document.createElement('a');
     link.href = url;
-    link.download = `gym-analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `gym-analytics-${selectedTimeRange}-${new Date().toISOString().split('T')[0]}.json`;
     
     // Append to body, click and remove
     document.body.appendChild(link);
@@ -84,8 +111,8 @@ export default function AnalyticsReports({
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-500">Time Range:</span>
           <select 
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
+            value={selectedTimeRange}
+            onChange={(e) => handleTimeRangeChange(e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-1 text-sm"
           >
             <option value="week">Last 7 Days</option>
@@ -100,7 +127,7 @@ export default function AnalyticsReports({
         <div className="rounded-lg border border-gray-200 p-4">
           <h3 className="mb-4 text-lg font-medium text-gray-800">Check-ins by Day</h3>
           <div className="flex h-64 items-end justify-between space-x-2">
-            {defaultCheckInsByDay.map((day, index) => (
+            {checkInsByDay.map((day, index) => (
               <div key={index} className="flex flex-1 flex-col items-center">
                 <div 
                   className="w-full rounded-t-sm bg-blue-500 transition-all duration-500 ease-in-out hover:bg-blue-600"
@@ -148,20 +175,32 @@ export default function AnalyticsReports({
         <div className="rounded-lg border border-gray-200 p-4">
           <h3 className="mb-3 text-lg font-medium text-gray-800">Peak Hours</h3>
           <div className="space-y-3">
-            {peakHours.map((hour, index) => (
-              <div key={index} className="flex items-center">
-                <div className="w-24 text-sm text-gray-600">{hour.hour}</div>
-                <div className="flex-1">
-                  <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div 
-                      className="absolute h-full rounded-full bg-blue-600 transition-all duration-500 ease-in-out" 
-                      style={{ width: `${(hour.count / Math.max(...peakHours.map(h => h.count))) * 100}%` }}
-                    ></div>
+            {peakHours.map((hour, index) => {
+              // Calculate percentage if not provided (backward compatibility)
+              const percentage = hour.percentage ?? Math.round((hour.count / Math.max(...peakHours.map(h => h.count))) * 100);
+              
+              return (
+                <div key={index} className="flex items-center">
+                  <div className="w-24 text-sm text-gray-600">{hour.hour}</div>
+                  <div className="flex-1">
+                    <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div 
+                        className="absolute h-full rounded-full bg-blue-600 transition-all duration-500 ease-in-out" 
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="ml-3 flex flex-col items-end">
+                    <div className="text-sm font-medium text-gray-900">{hour.count}</div>
+                    {hour.averageCount && (
+                      <div className="text-xs text-gray-500">
+                        avg: {hour.averageCount}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="ml-3 w-10 text-right text-sm font-medium text-gray-900">{hour.count}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         
@@ -188,21 +227,21 @@ export default function AnalyticsReports({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard 
             title="Average Daily Check-ins" 
-            value={Math.round(defaultCheckInsByDay.reduce((sum, day) => sum + day.count, 0) / defaultCheckInsByDay.length)} 
+            value={Math.round(checkInsByDay.reduce((sum, day) => sum + day.count, 0) / checkInsByDay.length)} 
             change="+5%" 
             isPositive={true}
           />
           <MetricCard 
             title="Member Retention" 
-            value="92%" 
-            change="+2%" 
-            isPositive={true}
+            value={`${memberMetrics?.retentionRate || 0}%`} 
+            change={memberMetrics?.retentionChange || "+0%"} 
+            isPositive={!memberMetrics?.retentionChange?.startsWith('-')}
           />
           <MetricCard 
             title="New Members" 
-            value="18" 
-            change="-3" 
-            isPositive={false}
+            value={memberMetrics?.newMembers || 0} 
+            change={memberMetrics?.newMembersChange || "+0"} 
+            isPositive={!memberMetrics?.newMembersChange?.startsWith('-')}
           />
         </div>
       </div>

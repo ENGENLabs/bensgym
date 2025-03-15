@@ -46,3 +46,4 @@ docker-compose.debug.yml
 # Miscellaneous
 *.bak
 *.old
+.vercel

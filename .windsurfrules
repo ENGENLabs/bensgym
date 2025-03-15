@@ -1,0 +1,145 @@
+Code Style and Quality
+
+Core Principles
+Always prefer simple, elegant solutions (KISS principle).
+
+Avoid duplication of code (DRY principle); check existing codebase first.
+
+Only add functionality when explicitly needed (YAGNI principle).
+
+Adhere to SOLID principles where applicable (e.g., single responsibility, dependency inversion).
+
+Keep code clean, organized, and under 200-300 lines per file; refactor proactively.
+
+Implementation Guidelines
+Write code that respects dev, test, and prod environments.
+
+!You never mock data for dev or prod—only for tests.
+
+!You never introduce new patterns or technologies unless existing options are exhausted; remove old logic afterward.
+
+!You never overwrite .env without my explicit confirmation.
+
+Quality and Documentation
+After each major feature, generate a brief markdown doc in /docs/[feature].md and update /docs/overview.md.
+
+Start every response with a random emoji (e.g., 🐳, 🌟) to signal context retention.
+
+Optimize your outputs to minimize token usage while retaining clarity.
+
+Technology Constraints
+
+This is a web application for managing gym member check-ins, built with a modern tech stack:
+
+Technical Stack
+
+1. Frontend:
+   - React for UI components
+   - Remix as the full-stack framework
+   - TailwindCSS for styling
+
+2. Backend**:
+   - Node.js as the runtime environment
+   - Remix for server-side rendering and API routes
+   - Server-Sent Events (SSE) for real-time updates
+
+3. Database:
+   - PostgreSQL as the database
+   - Prisma as the ORM (Object-Relational Mapping) tool
+
+4. External Integrations**:
+   - Square API for membership verification and payment processing
+   - Square Webhooks for real-time updates
+
+5. Deployment:
+   - Docker and Docker Compose for containerization
+   - Docker Swarm for orchestration in production
+
+Core Data Models
+
+1. User: Staff and admin users who manage the system
+2. Customer: Gym members with membership information
+3. CheckIn: Records of member check-ins
+4. **Configuration: System configuration settings
+5. SystemLog: System activity and error logs
+
+Key Features
+
+1. Member Check-in:
+   - Members can check in using their phone number
+   - The system verifies membership status via Square API
+   - Supports both subscription-based and cash payment memberships
+
+2. Admin Dashboard:
+   - Real-time check-in notifications
+   - Member management
+   - Check-in history and analytics
+   - System status monitoring
+
+3. Square Integration:
+   - Verifies customer identity and membership status
+   - Checks subscription status for recurring memberships
+   - Validates recent payments for cash-based memberships
+   - Receives real-time updates via webhooks
+
+4. Real-time Features:
+   - Check-in notifications on the admin dashboard
+   - Webhook integration for customer and subscription data changes
+   - Automatic dashboard refresh when webhook events are received
+
+Application Flow
+
+1. Check-in Process:
+   - Member enters phone number
+   - System verifies membership via Square API
+   - System records check-in in the database
+   - Real-time notification sent to admin dashboard
+
+2. Admin Management:
+   - Admins can view check-in history
+   - Admins can manage members
+   - Admins can view system status and analytics
+
+3. Webhook Processing:
+   - Square sends webhook events when customer or subscription data changes
+   - System processes these events in real-time
+   - Dashboard updates automatically
+
+## Environment-Specific Behavior
+
+- Development: Uses mock data when Square API is not configured
+- Production: Uses real data from Square API, processes webhooks in real-time
+
+
+Process Control
+Workflow Preferences
+Task Execution
+Focus only on code relevant to the task; !you never touch unrelated code.
+
+Break complex tasks into logical stages; pause and ask for confirmation before next step.
+
+For simple, low-risk tasks, implement fully; for complex tasks, use review checkpoints.
+
+Planning and Progress
+Before major features, generate plan.md with steps and wait for my approval.
+
+After each component, summarize what’s done in progress.md and update TODO.txt with next steps.
+
+If context exceeds 100k tokens, summarize prior work into context-summary.md and restart chat.
+
+Testing and Feedback
+Write thorough tests for all major functionality; suggest edge case tests.
+
+Be responsive to my feedback—adjust granularity (more/less checkpoints) as I prefer.
+
+
+Communication Preferences
+After each component, provide a brief summary of what’s completed.
+
+Classify proposed changes: Small (minor), Medium (moderate), Large (significant).
+
+For Large changes, outline an implementation plan and wait for approval.
+
+Track completed vs. pending features in responses.
+
+If uncertain about scope or requirements, pause and ask clarifying questions.
