@@ -1,14 +1,15 @@
 import { createCookieSessionStorage, redirect } from "@remix-run/node";
+import { getEnv } from "./env.server";
 
-// This would typically come from environment variables
-const sessionSecret = "this-is-a-secret-value-that-should-be-in-env-file";
+// Get session secret from environment variables
+const { SESSION_SECRET } = getEnv();
 
 // Create session storage
 const sessionStorage = createCookieSessionStorage({
   cookie: {
     name: "gym_admin_session",
     secure: process.env.NODE_ENV === "production",
-    secrets: [sessionSecret],
+    secrets: [SESSION_SECRET || "fallback-secret-for-development-only"],
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // 30 days

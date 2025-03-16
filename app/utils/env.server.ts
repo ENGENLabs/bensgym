@@ -13,6 +13,11 @@ type Env = {
 };
 
 export function getEnv(): Env {
+  // For database URL, prefer Supabase integration variables if available
+  const databaseUrl = process.env.POSTGRES_PRISMA_URL || 
+                      process.env.DATABASE_URL || 
+                      '';
+  
   return {
     NODE_ENV: process.env.NODE_ENV as 'development' | 'production' | 'test',
     SQUARE_ACCESS_TOKEN: process.env.SQUARE_ACCESS_TOKEN,
@@ -20,7 +25,7 @@ export function getEnv(): Env {
     SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT as 'sandbox' | 'production',
     SQUARE_WEBHOOK_SIGNATURE_KEY: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY,
     SQUARE_WEBHOOK_URL: process.env.SQUARE_WEBHOOK_URL,
-    DATABASE_URL: process.env.DATABASE_URL as string,
+    DATABASE_URL: databaseUrl,
     SESSION_SECRET: process.env.SESSION_SECRET as string,
   };
 }
