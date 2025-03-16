@@ -19,7 +19,7 @@ import Logo from '~/components/common/Logo';
 // Import database models
 import { getRecentCheckIns, getCheckInStats, getCheckInPeakHours, getCheckInsByDayOfWeek } from '~/models/check-in.server';
 import { getAllCustomers, getCustomerStats, getMemberMetrics } from '~/models/customer.server';
-import { getSystemLogs } from '~/models/system-log.server';
+import { getSystemLogs, createSystemLog } from '~/models/system-log.server';
 
 // Import refactored components
 import SystemStatusComponent from '~/components/admin/SystemStatus';
@@ -300,9 +300,33 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   } catch (error) {
     console.error('Error loading admin data:', error);
+    
+    // Capture more detailed error information
+    const errorDetails = {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'UnknownError',
+      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Get environment variables
+    const { NODE_ENV } = getEnv();
+    
+    // Log the error to the system logs for later analysis
+    try {
+      await createSystemLog({
+        message: `Admin dashboard error: ${errorDetails.message}`,
+        eventType: 'admin_error',
+        severity: 'error',
+        details: errorDetails
+      });
+    } catch (logError) {
+      console.error('Failed to log admin error:', logError);
+    }
+    
     return json({
       error: 'Failed to load admin data',
-      message: error instanceof Error ? error.message : 'Unknown error',
+      errorDetails,
       checkIns: [],
       members: [],
       analytics: {
@@ -314,24 +338,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
         checkInsByDay: [],
         membershipTypes: []
       },
-      systemStatus: {
-        status: 'error',
-        url: '',
-        lastChecked: new Date().toISOString(),
-        lastCheckIn: null
-      },
       webhookStatus: {
         status: 'error',
         message: 'Error loading webhook status',
         lastReceived: null,
         signatureValid: false
       },
-      recentActivity: {
-        totalCheckIns: 0,
-        activeMembers: 0,
-        todayCheckIns: 0,
-        lastUpdated: new Date().toISOString(),
-        recentLogs: []
+      systemStatus: {
+        status: 'error',
+        url: '',
+        lastChecked: new Date().toISOString(),
+        lastCheckIn: null
       },
       timeRange: 'week',
       memberMetrics: {
@@ -339,6 +356,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
         retentionRate: 0,
         newMembersChange: '0%',
         retentionChange: '0%'
+      },
+      recentActivity: {
+        totalCheckIns: 0,
+        activeMembers: 0,
+        todayCheckIns: 0,
+        lastUpdated: new Date().toISOString(),
+        recentLogs: []
       },
       membersNeedingRenewal: [],
       needsRenewalCount: 0
